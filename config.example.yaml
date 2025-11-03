@@ -1,0 +1,26 @@
+# Telegram 机器人配置
+telegram:
+  # 从 @BotFather 获取的机器人令牌
+  bot_token: "bot_token"
+  # 接收通知的聊天ID（可以是用户ID或群组ID）
+  chat_id: "chat_id"
+  # 代理配置（可选，如果不需要代理请留空或删除此项）
+  proxy:
+    # HTTP/HTTPS 代理示例: "http://127.0.0.1:10801" 或 "https://127.0.0.1:10801"
+    # SOCKS5 代理示例: "socks5://127.0.0.1:10801"
+    # 如果不需要代理，请设置为空字符串 "" 或注释掉此行
+    url: ""
+
+# Gotify 服务器配置
+gotify:
+  # Gotify 服务器地址（包含端口，如：http://localhost:8080）
+  server_url: "server_url"
+  # 客户端令牌（从 Gotify 管理界面获取）
+  client_token: "client_token"
+
+# 消息处理配置
+message:
+  # 消息长度阈值，超过此长度将以文件形式发送（Telegram 限制为 4096 字符）
+  max_length: 4000
+  # 消息前缀格式，{app_name} 将被替换为应用名称
+  title_format: "[Gotify→{app_name}] - {title}"
