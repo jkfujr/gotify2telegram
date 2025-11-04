@@ -62,6 +62,49 @@ class Config:
     def gotify_client_token(self) -> str:
         return self._get_nested_value('gotify.client_token')
 
+    # ========= Gotify 过滤配置 =========
+    def _to_int_list(self, value: Any) -> list[int]:
+        result: list[int] = []
+        if isinstance(value, list):
+            for v in value:
+                try:
+                    result.append(int(v))
+                except Exception:
+                    self.logger.warning(f"Gotify 过滤ID不是有效数字，已忽略: {v}")
+        return result
+
+    @property
+    def gotify_whitelist(self) -> list[int]:
+        # 支持两种配置路径：gotify.filter.whitelist 或 gotify.whitelist
+        raw = self._get_nested_value('gotify.filter.whitelist')
+        if raw is None:
+            raw = self._get_nested_value('gotify.whitelist')
+        return self._to_int_list(raw)
+
+    @property
+    def gotify_blacklist(self) -> list[int]:
+        # 支持两种配置路径：gotify.filter.blacklist 或 gotify.blacklist
+        raw = self._get_nested_value('gotify.filter.blacklist')
+        if raw is None:
+            raw = self._get_nested_value('gotify.blacklist')
+        return self._to_int_list(raw)
+
+    def is_app_allowed(self, app_id: int) -> bool:
+        """根据白名单/黑名单判断是否允许转发
+        规则：
+        - 若白名单非空，仅允许在白名单中的 app_id
+        - 否则，若黑名单非空，拒绝黑名单中的 app_id
+        - 若都为空，允许全部
+        """
+        whitelist = self.gotify_whitelist
+        blacklist = self.gotify_blacklist
+
+        if whitelist:
+            return app_id in whitelist
+        if blacklist:
+            return app_id not in blacklist
+        return True
+
     @property
     def max_message_length(self) -> int:
         return self._get_nested_value('message.max_length') or 4000

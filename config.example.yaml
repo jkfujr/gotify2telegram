@@ -17,6 +17,11 @@ gotify:
   server_url: "server_url"
   # 客户端令牌（从 Gotify 管理界面获取）
   client_token: "client_token"
+  # 消息过滤（可选）：白名单/黑名单，按 appid 过滤
+  # 规则：若 whitelist 非空，仅转发 whitelist 中的 appid；否则若 blacklist 非空，跳过其中的 appid；均为空则转发全部
+  filter:
+    whitelist: []   # 示例：[5]
+    blacklist: []   # 示例：[1, 2]
 
 # 消息处理配置
 message:
