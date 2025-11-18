@@ -75,7 +75,7 @@ class Config:
 
     @property
     def gotify_whitelist(self) -> list[int]:
-        # 支持两种配置路径：gotify.filter.whitelist 或 gotify.whitelist
+        # 支持两种配置路径: gotify.filter.whitelist 或 gotify.whitelist
         raw = self._get_nested_value('gotify.filter.whitelist')
         if raw is None:
             raw = self._get_nested_value('gotify.whitelist')
@@ -83,7 +83,7 @@ class Config:
 
     @property
     def gotify_blacklist(self) -> list[int]:
-        # 支持两种配置路径：gotify.filter.blacklist 或 gotify.blacklist
+        # 支持两种配置路径: gotify.filter.blacklist 或 gotify.blacklist
         raw = self._get_nested_value('gotify.filter.blacklist')
         if raw is None:
             raw = self._get_nested_value('gotify.blacklist')
@@ -91,7 +91,7 @@ class Config:
 
     def is_app_allowed(self, app_id: int) -> bool:
         """根据白名单/黑名单判断是否允许转发
-        规则：
+        规则: 
         - 若白名单非空，仅允许在白名单中的 app_id
         - 否则，若黑名单非空，拒绝黑名单中的 app_id
         - 若都为空，允许全部

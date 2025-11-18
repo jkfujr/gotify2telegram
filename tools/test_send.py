@@ -1,5 +1,5 @@
 """
-测试脚本：读取配置并向 Telegram 发送一条测试消息
+测试脚本: 读取配置并向 Telegram 发送一条测试消息
 """
 
 import sys
@@ -20,7 +20,7 @@ from core.utils.text import extract_verification_code
 def main():
     default_config_path = PROJECT_ROOT / "config.yaml"
     test_title = "【测试标题】验证码复制按钮"
-    test_message = f"{test_title}\n账号中心，验证码：048460"
+    test_message = f"{test_title}\n账号中心，验证码: 048460"
 
     setup_logging()
     logger = logging.getLogger("test_send")

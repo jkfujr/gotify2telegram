@@ -67,7 +67,7 @@ class TelegramSender:
 
         retry_strategy = Retry(
             total=3,                    # 总共重试3次
-            backoff_factor=1,           # 重试间隔：1s, 2s, 4s
+            backoff_factor=1,           # 重试间隔: 1s, 2s, 4s
             status_forcelist=[429, 500, 502, 503, 504],  # 状态码重试
             allowed_methods=["POST"],   # 只对 POST 请求重试
         )

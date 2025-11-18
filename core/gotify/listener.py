@@ -46,16 +46,16 @@ class GotifyListener:
 
             async for message in async_gotify.stream():
                 try:
-                    # 过滤：白名单/黑名单
+                    # 过滤: 白名单/黑名单
                     app_id = message.get('appid')
                     if isinstance(app_id, int):
                         if self.config.gotify_whitelist:
                             if app_id not in self.config.gotify_whitelist:
-                                self.logger.info(f"白名单模式：跳过 appid={app_id} 的消息")
+                                self.logger.info(f"白名单模式: 跳过 appid={app_id} 的消息")
                                 continue
                         elif self.config.gotify_blacklist:
                             if app_id in self.config.gotify_blacklist:
-                                self.logger.info(f"黑名单过滤：跳过 appid={app_id} 的消息")
+                                self.logger.info(f"黑名单过滤: 跳过 appid={app_id} 的消息")
                                 continue
 
                     # 使用已解析的 app_id 获取应用名

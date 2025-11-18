@@ -22,7 +22,7 @@ pip install -r requirements.txt
 cp "config.example.yaml" config.yaml
 ```
 
-编辑 `config.yaml`：
+编辑 `config.yaml`: 
 ```yaml
 telegram:
   bot_token: "YOUR_BOT_TOKEN"     # @BotFather 获取

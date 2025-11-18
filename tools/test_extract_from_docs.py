@@ -1,16 +1,16 @@
 """
 从 .docs/验证码.md 中逐行读取短信示例，测试验证码提取是否正确。
 
-用法：直接运行
+用法: 直接运行
   - python tools/test_extract_from_docs.py
 
-输出：每行对应的提取结果，以及成功/失败统计。
+输出: 每行对应的提取结果，以及成功/失败统计。
 """
 
 import sys
 from pathlib import Path
 
-# 允许作为脚本直接运行：将项目根目录加入 sys.path
+# 允许作为脚本直接运行: 将项目根目录加入 sys.path
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
