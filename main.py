@@ -19,13 +19,11 @@ async def main():
         logger.info("配置加载成功")
 
         logger.info("正在初始化 Telegram 连接...")
-        try:
-            telegram_sender = TelegramSender(config)
+        telegram_sender = TelegramSender(config)
+        if telegram_sender.is_connected():
             logger.info("Telegram 连接测试通过")
-        except Exception as e:
-            logger.error(f"Telegram 连接失败: {e}")
-            logger.error("程序无法启动，请检查配置和网络连接")
-            sys.exit(1)
+        else:
+            logger.warning("Telegram 暂不可用：消息将进入内存队列，等待连通后自动补发")
 
         bridge = GotifyToTelegramBridge(config, telegram_sender)
         listener = GotifyListener(config, bridge)

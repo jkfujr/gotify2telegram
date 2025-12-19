@@ -1,4 +1,6 @@
 import logging
+import asyncio
+from datetime import datetime
 from typing import Dict
 
 try:
@@ -34,47 +36,53 @@ class GotifyListener:
             return f"应用{app_id}"
 
     async def start_listening(self):
-        self.logger.info("开始连接 Gotify 服务器...")
+        retry_seconds = 60
 
-        try:
-            async_gotify = AsyncGotify(
-                base_url=self.config.gotify_server_url,
-                client_token=self.config.gotify_client_token,
-            )
+        while True:
+            self.logger.info("开始连接 Gotify 服务器...")
 
-            self.logger.info("成功连接到 Gotify 服务器，开始监听消息...")
+            try:
+                async_gotify = AsyncGotify(
+                    base_url=self.config.gotify_server_url,
+                    client_token=self.config.gotify_client_token,
+                )
 
-            async for message in async_gotify.stream():
-                try:
-                    # 过滤: 白名单/黑名单
-                    app_id = message.get('appid')
-                    if isinstance(app_id, int):
-                        if self.config.gotify_whitelist:
-                            if app_id not in self.config.gotify_whitelist:
-                                self.logger.info(f"白名单模式: 跳过 appid={app_id} 的消息")
-                                continue
-                        elif self.config.gotify_blacklist:
-                            if app_id in self.config.gotify_blacklist:
-                                self.logger.info(f"黑名单过滤: 跳过 appid={app_id} 的消息")
-                                continue
+                self.logger.info("成功连接到 Gotify 服务器，开始监听消息...")
 
-                    # 使用已解析的 app_id 获取应用名
-                    app_name = await self._get_application_name(async_gotify, app_id)
+                async for message in async_gotify.stream():
+                    try:
+                        app_id = message.get('appid')
+                        if isinstance(app_id, int):
+                            if self.config.gotify_whitelist:
+                                if app_id not in self.config.gotify_whitelist:
+                                    self.logger.info(f"白名单模式: 跳过 appid={app_id} 的消息")
+                                    continue
+                            elif self.config.gotify_blacklist:
+                                if app_id in self.config.gotify_blacklist:
+                                    self.logger.info(f"黑名单过滤: 跳过 appid={app_id} 的消息")
+                                    continue
 
-                    self.logger.info(f"收到来自 {app_name} 的消息: {message.get('title')}")
+                        app_name = await self._get_application_name(async_gotify, app_id)
 
-                    success = self.bridge.send_message(
-                        app_name=app_name,
-                        title=message.get('title') or "",
-                        body=message.get('message') or ""
-                    )
+                        self.logger.info(f"收到来自 {app_name} 的消息: {message.get('title')}")
 
-                    if not success:
-                        self.logger.warning("消息发送失败，但继续监听...")
+                        received_at = datetime.now()
+                        success = self.bridge.send_message(
+                            app_name=app_name,
+                            title=message.get('title') or "",
+                            body=message.get('message') or "",
+                            received_at=received_at,
+                        )
 
-                except Exception as e:
-                    self.logger.error(f"处理消息时出错: {e}")
+                        if not success:
+                            self.logger.warning("消息发送失败，但继续监听...")
 
-        except Exception as e:
-            self.logger.error(f"连接 Gotify 服务器失败: {e}")
-            raise
+                    except Exception as e:
+                        self.logger.error(f"处理消息时出错: {e}")
+
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:
+                self.logger.error(f"Gotify 连接断开/失败: {e}")
+                self.logger.info(f"{retry_seconds}秒后重试连接 Gotify...")
+                await asyncio.sleep(retry_seconds)

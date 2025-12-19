@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from typing import Optional
 
 from core.config import Config
@@ -21,13 +22,18 @@ class GotifyToTelegramBridge:
         full_message = f"{formatted_title}\n\n{body}"
         return formatted_title, full_message
 
-    def send_message(self, app_name: str, title: str, body: str) -> bool:
+    def send_message(self, app_name: str, title: str, body: str, received_at: Optional[datetime] = None) -> bool:
         formatted_title, full_message = self.compose_message(app_name, title, body)
         code: Optional[str] = extract_verification_code(full_message)
         reply_markup = build_copy_code_markup(code) if code else None
 
         if len(full_message) >= self.config.max_message_length:
             self.logger.info(f"消息过长 ({len(full_message)} 字符)，以文件形式发送")
-            return self.telegram_sender.send_document(title=formatted_title, content=full_message, reply_markup=reply_markup)
+            return self.telegram_sender.send_document(
+                title=formatted_title,
+                content=full_message,
+                reply_markup=reply_markup,
+                received_at=received_at,
+            )
         else:
-            return self.telegram_sender.send_text_message(full_message, reply_markup=reply_markup)
+            return self.telegram_sender.send_text_message(full_message, reply_markup=reply_markup, received_at=received_at)
