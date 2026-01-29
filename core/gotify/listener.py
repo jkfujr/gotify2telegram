@@ -64,13 +64,21 @@ class GotifyListener:
 
                         app_name = await self._get_application_name(async_gotify, app_id)
 
-                        self.logger.info(f"收到来自 {app_name} 的消息: {message.get('title')}")
+                        title = message.get('title') or ""
+                        body = message.get('message') or ""
+                        full_text_for_check = f"{title}\n{body}"
+
+                        if not self.config.is_message_allowed(full_text_for_check):
+                            self.logger.info(f"消息文本过滤: 跳过匹配黑名单的消息 (App: {app_name})")
+                            continue
+
+                        self.logger.info(f"收到来自 {app_name} 的消息: {title}")
 
                         received_at = datetime.now()
                         success = self.bridge.send_message(
                             app_name=app_name,
-                            title=message.get('title') or "",
-                            body=message.get('message') or "",
+                            title=title,
+                            body=body,
                             received_at=received_at,
                         )
 

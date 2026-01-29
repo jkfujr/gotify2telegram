@@ -1,4 +1,5 @@
 import logging
+import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 
@@ -152,6 +153,50 @@ class Config:
     @property
     def title_format(self) -> str:
         return self._get_nested_value('message.title_format') or "[Gotify→{app_name}] - {title}"
+
+    # ========= 消息文本过滤配置 =========
+    def _compile_regex_list(self, raw_list: Any) -> list[re.Pattern]:
+        patterns = []
+        if isinstance(raw_list, list):
+            for pattern_str in raw_list:
+                try:
+                    patterns.append(re.compile(str(pattern_str), re.IGNORECASE))
+                except re.error as e:
+                    self.logger.warning(f"无效的正则表达式 '{pattern_str}': {e}")
+        return patterns
+
+    @property
+    def message_whitelist_patterns(self) -> list[re.Pattern]:
+        raw = self._get_nested_value('message.filter.whitelist')
+        return self._compile_regex_list(raw)
+
+    @property
+    def message_blacklist_patterns(self) -> list[re.Pattern]:
+        raw = self._get_nested_value('message.filter.blacklist')
+        return self._compile_regex_list(raw)
+
+    def is_message_allowed(self, text: str) -> bool:
+        """根据消息文本白名单/黑名单判断是否允许转发
+        规则:
+        1. 若匹配白名单任一规则，则允许（优先级最高）
+        2. 若匹配黑名单任一规则，则拒绝
+        3. 否则允许
+        """
+        if not text:
+            return True
+
+        # 1. 检查白名单 (WhiteList)
+        for pattern in self.message_whitelist_patterns:
+            if pattern.search(text):
+                return True
+
+        # 2. 检查黑名单 (BlackList)
+        for pattern in self.message_blacklist_patterns:
+            if pattern.search(text):
+                return False
+
+        # 3. 默认允许
+        return True
 
     @property
     def proxy_url(self) -> Optional[str]:
