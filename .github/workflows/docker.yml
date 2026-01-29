@@ -2,19 +2,45 @@ name: docker
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*.*.*"
 
 jobs:
   build-and-run:
     runs-on: self-hosted
     env:
-      IMAGE_NAME: gotify2telegram:latest
+      IMAGE_NAME: gotify2telegram
       CONFIG_PATH: config.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Compute tag
+        id: meta
+        shell: pwsh
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          $refType = "${{ github.ref_type }}"
+          $refName = "${{ github.ref_name }}"
+          $defaultBranch = "${{ env.DEFAULT_BRANCH }}"
+          $shaShort = "${{ github.sha }}".Substring(0, 7)
+
+          if ($refType -eq "tag") {
+            $tag = $refName
+          } elseif ($refType -eq "branch" -and $refName -eq $defaultBranch) {
+            $tag = "latest"
+          } else {
+            $tag = "sha-$shaShort"
+          }
+
+          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
       - name: Build image
-        run: docker build -t ${{ env.IMAGE_NAME }} .
+        run: docker build -t ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} .
 
       - name: Run container
-        run: docker run --rm -v "${{ github.workspace }}\\${{ env.CONFIG_PATH }}:/app/config.yaml" ${{ env.IMAGE_NAME }}
+        run: docker run --rm -v "${{ github.workspace }}\\${{ env.CONFIG_PATH }}:/app/config.yaml" ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
