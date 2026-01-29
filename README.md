@@ -12,17 +12,16 @@ Gotify 消息转发到 Telegram。
 
 ## 快速开始
 
-### 1. 安装
+### 1. 准备配置
+
+无论采用何种运行方式，都需要先准备配置文件 `config.yaml`。
+
 ```bash
-pip install -r requirements.txt
+# 复制示例配置
+cp config.example.yaml config.yaml
 ```
 
-### 2. 配置
-```bash
-cp "config.example.yaml" config.yaml
-```
-
-编辑 `config.yaml`: 
+编辑 `config.yaml` 填入真实信息：
 ```yaml
 telegram:
   bot_token: "YOUR_BOT_TOKEN"     # @BotFather 获取
@@ -39,12 +38,35 @@ message:
   title_format: "[{app_name}] {title}"
 ```
 
-### 3. 运行
+### 2. 选择运行方式
+
+#### 方式一：Docker 运行（推荐）
+
+使用 GitHub Container Registry 镜像：
+
+```bash
+docker run --rm \
+  -v "$(pwd)/config.yaml:/app/config.yaml" \
+  ghcr.io/jkfujr/gotify2telegram:latest
+```
+
+> **提示**：如果挂载的 `config.yaml` 不存在或为空，容器会自动生成一份示例配置。
+
+#### 方式二：源码运行
+
+**安装依赖**
+```bash
+pip install -r requirements.txt
+# 如果需要 SOCKS5 代理支持
+pip install requests[socks]
+```
+
+**启动程序**
 ```bash
 python main.py
 ```
 
-## 获取配置
+## 获取配置说明
 
 **Telegram Bot Token:**
 1. 找 [@BotFather](https://t.me/BotFather)
@@ -60,5 +82,3 @@ python main.py
 1. 登录 Gotify 管理界面
 2. Clients → 创建客户端
 3. 复制 token
-
-SOCKS5 代理需要: `pip install requests[socks]`
