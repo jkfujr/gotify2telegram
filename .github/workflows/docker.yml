@@ -1,0 +1,20 @@
+name: docker
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-and-run:
+    runs-on: self-hosted
+    env:
+      IMAGE_NAME: gotify2telegram:latest
+      CONFIG_PATH: config.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t ${{ env.IMAGE_NAME }} .
+
+      - name: Run container
+        run: docker run --rm -v "${{ github.workspace }}\\${{ env.CONFIG_PATH }}:/app/config.yaml" ${{ env.IMAGE_NAME }}
