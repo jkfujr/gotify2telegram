@@ -8,45 +8,57 @@ on:
     tags:
       - "v*.*.*"
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  build-and-run:
+  build-and-push:
     runs-on: ubuntu-latest
-    env:
-      IMAGE_NAME: gotify2telegram
-      CONFIG_PATH: config.yaml
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compute tag
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
         id: meta
-        shell: pwsh
+        shell: bash
         env:
+          IMAGE: ghcr.io/${{ github.repository }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
-          $refType = "${{ github.ref_type }}"
-          $refName = "${{ github.ref_name }}"
-          $defaultBranch = "${{ env.DEFAULT_BRANCH }}"
-          $shaShort = "${{ github.sha }}".Substring(0, 7)
-
-          if ($refType -eq "tag") {
-            $tag = $refName
-          } elseif ($refType -eq "branch" -and $refName -eq $defaultBranch) {
-            $tag = "latest"
-          } else {
-            $tag = "sha-$shaShort"
-          }
-
-          "tag=$tag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
-      - name: Build image
-        run: docker build -t ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} .
-
-      - name: Prepare config file
-        run: |
-          if [ ! -f "${{ github.workspace }}/config.yaml" ]; then
-            cp "${{ github.workspace }}/config.example.yaml" "${{ github.workspace }}/config.yaml"
+          set -euo pipefail
+          image_lower="$(echo "${IMAGE}" | tr '[:upper:]' '[:lower:]')"
+          sha_short="${GITHUB_SHA::7}"
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            tag="${GITHUB_REF_NAME}"
+          elif [[ "${GITHUB_REF_TYPE}" == "branch" && "${GITHUB_REF_NAME}" == "${DEFAULT_BRANCH}" ]]; then
+            tag="latest"
+          else
+            tag="sha-${sha_short}"
           fi
+          {
+            echo "image=${image_lower}"
+            echo "tag=${tag}"
+          } >> "$GITHUB_OUTPUT"
 
-      - name: Run container
-        run: docker run --rm -v "${{ github.workspace }}/${{ env.CONFIG_PATH }}:/app/config.yaml" ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.tag }}
