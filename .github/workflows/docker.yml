@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-run:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     env:
       IMAGE_NAME: gotify2telegram
       CONFIG_PATH: config.yaml
