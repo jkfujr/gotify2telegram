@@ -42,5 +42,11 @@ jobs:
       - name: Build image
         run: docker build -t ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }} .
 
+      - name: Prepare config file
+        run: |
+          if [ ! -f "${{ github.workspace }}/config.yaml" ]; then
+            cp "${{ github.workspace }}/config.example.yaml" "${{ github.workspace }}/config.yaml"
+          fi
+
       - name: Run container
         run: docker run --rm -v "${{ github.workspace }}/${{ env.CONFIG_PATH }}:/app/config.yaml" ${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.tag }}

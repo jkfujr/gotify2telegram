@@ -16,14 +16,37 @@ class Config:
         self.logger = logging.getLogger(__name__)
         self.config = self._load_config()
         self._validate_config()
+        self._warn_if_example_values()
 
     def _load_config(self) -> Dict[str, Any]:
-        if not Path(self.config_path).exists():
-            raise FileNotFoundError(f"配置文件不存在: {self.config_path}")
+        config_path = Path(self.config_path)
+        example_path = Path(__file__).resolve().parents[1] / "config.example.yaml"
+
+        if config_path.exists() and config_path.is_dir():
+            raise IsADirectoryError(f"配置路径是目录，无法读取: {self.config_path}")
+
+        if not config_path.exists():
+            if example_path.exists():
+                self.logger.warning("未找到配置文件 %s，已复制示例配置 %s", config_path, example_path)
+                config_path.write_text(example_path.read_text(encoding="utf-8"), encoding="utf-8")
+            else:
+                raise FileNotFoundError(f"配置文件不存在: {self.config_path}")
+
+        if config_path.stat().st_size == 0:
+            if example_path.exists():
+                self.logger.warning("检测到空配置文件 %s，已填充示例配置 %s", config_path, example_path)
+                config_path.write_text(example_path.read_text(encoding="utf-8"), encoding="utf-8")
+            else:
+                raise FileNotFoundError("配置文件为空，且未找到示例配置")
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                return yaml.safe_load(f)
+            with open(config_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+                if data is None:
+                    return {}
+                if not isinstance(data, dict):
+                    raise ValueError("配置文件格式错误: 顶层必须是映射结构")
+                return data
         except yaml.YAMLError as e:
             raise ValueError(f"配置文件格式错误: {e}")
 
@@ -38,6 +61,23 @@ class Config:
         for key in required_keys:
             if not self._get_nested_value(key):
                 raise ValueError(f"配置项缺失或为空: {key}")
+
+    def _warn_if_example_values(self) -> None:
+        placeholders = {
+            'telegram.bot_token': 'bot_token',
+            'telegram.chat_id': 'chat_id',
+            'gotify.server_url': 'server_url',
+            'gotify.client_token': 'client_token',
+        }
+        example_like = [
+            key for key, placeholder in placeholders.items()
+            if self._get_nested_value(key) == placeholder
+        ]
+        if example_like:
+            self.logger.warning(
+                "检测到示例配置值未修改: %s，请更新为真实值",
+                ", ".join(example_like)
+            )
 
     def _get_nested_value(self, key: str) -> Any:
         keys = key.split('.')
